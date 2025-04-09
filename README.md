@@ -1,2 +1,2 @@
-# cl-ec2-spot
-# ver2
+# スポットインスタンスで動くEC2インスタンスを
+# Cloudformationで作る実験

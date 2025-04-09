@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create a t2.micro EC2 Spot Instance with Security Group using prefix list access for SSH.
+
+Parameters:
+  AmiId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0b6e7ccaa7b93e898
+    Description: AMI ID for the EC2 instance
+
+Resources:
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH from specific prefix list
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourcePrefixListId: pl-08d491d20eebc3b95
+
+  SpotInstance:
+    Type: AWS::EC2::SpotFleet
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt EC2SpotFleetRole.Arn
+        TargetCapacity: 1
+        LaunchSpecifications:
+          - InstanceType: t2.micro
+            ImageId: !Ref AmiId
+            KeyName: !Ref KeyName
+            SecurityGroups:
+              - GroupId: !Ref EC2SecurityGroup
+            SubnetId: !Ref PublicSubnet
+            AssociatePublicIpAddress: true
+
+  EC2SpotFleetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+
+  # Optional: Provide a KeyPair name if needed
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 KeyPair name for SSH access
+
+  DefaultVPC:
+    Type: AWS::EC2::VPC::Id
+    Description: Default VPC ID
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public subnet of the default VPC
